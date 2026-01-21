@@ -84,7 +84,7 @@
 - **AMI**: Amazon Linux 2023（ARM64）
 - **ストレージ**: EBS gp3 30GB（ルートボリューム兼データ用）
 - **購入オプション**: オンデマンド（スポットインスタンスは使用しない）
-- **キーペア**: 新規作成（SSH接続用、トラブルシューティング用途）
+- **キーペア**: `minecraft-key`（作成済み）
 
 ### 3.2 Minecraftサーバー
 
@@ -182,13 +182,22 @@
 
 ## 5. Terraform設計方針
 
-### 5.1 Backend設定 (main.tf)
+### 5.1 プロジェクト共通設定
+
+| 設定項目 | 値 |
+|----------|-----|
+| プロジェクト名 (`project_name`) | `minecraft1` |
+| 環境名 (`environment`) | `prod` |
+| リソース命名規則 | `{project_name}-{environment}-{リソース名}` |
+| 命名例 | `minecraft1-prod-server`, `minecraft1-prod-sg-minecraft` |
+
+### 5.2 Backend設定 (main.tf)
 
 ```hcl
 terraform {
   backend "s3" {
-    bucket         = "＜S3バケット名：後で指定＞"
-    key            = "minecraft/terraform.tfstate"
+    bucket         = "minecraft-tfstate-1-hn"
+    key            = "minecraft1/prod/terraform.tfstate"
     region         = "ap-northeast-1"
     dynamodb_table = "terraform-locks"
     encrypt        = true
@@ -200,13 +209,16 @@ provider "aws" {
 }
 ```
 
-### 5.2 変数定義 (variables.tf)
+### 5.3 変数定義 (variables.tf)
 
 | 変数名 | 型 | 説明 | デフォルト値 |
 |--------|-----|------|--------------|
+| `project_name` | string | プロジェクト名 | `minecraft1` |
+| `environment` | string | 環境名 | `prod` |
 | `aws_region` | string | AWSリージョン | `ap-northeast-1` |
 | `instance_type` | string | EC2インスタンスタイプ | `t4g.medium` |
 | `volume_size` | number | EBSボリュームサイズ(GB) | `30` |
+| `key_name` | string | EC2キーペア名 | `minecraft-key` |
 | `discord_app_id` | string | Discord Application ID | （必須・Secret経由） |
 | `discord_public_key` | string | Discord Public Key | （必須・Secret経由） |
 | `admin_ip` | string | SSH許可IPアドレス | `null`（指定時のみSSH許可） |
@@ -214,7 +226,7 @@ provider "aws" {
 | `minecraft_port` | number | Minecraftポート | `25565` |
 | `rcon_port` | number | RCONポート | `25575` |
 
-### 5.3 出力定義 (outputs.tf)
+### 5.4 出力定義 (outputs.tf)
 
 | 出力名 | 説明 |
 |--------|------|
@@ -317,18 +329,21 @@ jobs:
 
 以下は「鶏と卵」問題を避けるため、Terraform実行前に手動で作成する：
 
-1. **S3バケット** (tfstate保存用)
-   - バケット名: `＜任意の一意な名前＞`
+1. **S3バケット** (tfstate保存用) ✅ 作成済み
+   - バケット名: `minecraft-tfstate-1-hn`
    - リージョン: ap-northeast-1
    - バージョニング: 有効推奨
    - パブリックアクセス: 全てブロック
 
-2. **DynamoDBテーブル** (tfstateロック用)
+2. **DynamoDBテーブル** (tfstateロック用) ✅ 作成済み
    - テーブル名: `terraform-locks`
    - パーティションキー: `LockID` (String)
    - 課金モード: オンデマンド
 
-3. **IAMユーザー** (GitHub Actions用)
+3. **EC2キーペア** ✅ 作成済み
+   - キーペア名: `minecraft-key`
+
+4. **IAMユーザー** (GitHub Actions用)
    - ユーザー名: `github-actions-terraform`
    - 必要なポリシー: EC2, Lambda, API Gateway, IAM, SSM, CloudWatch等への権限
 
@@ -412,11 +427,12 @@ def get_player_count(host, password, port=25575):
 
 ## 10. 未決定事項・TODO
 
-- [ ] S3バケット名の決定・作成
-- [ ] DynamoDBテーブルの作成
+- [x] S3バケット名の決定・作成 → `minecraft-tfstate-1-hn`
+- [x] DynamoDBテーブルの作成 → `terraform-locks`
+- [x] SSH用キーペアの作成 → `minecraft-key`
 - [ ] Discord Application作成・各種IDの取得
 - [ ] GitHub SecretsへのAWS認証情報登録
-- [ ] SSH用キーペアの命名規則
+- [ ] IAMユーザー（GitHub Actions用）の作成
 - [ ] 将来的な追加機能の検討
   - [ ] S3へのワールドデータ定期バックアップ
   - [ ] Minecraftバージョン更新の自動化
