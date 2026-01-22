@@ -60,12 +60,6 @@ resource "aws_iam_role_policy_attachment" "lambda_basic" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# VPCアクセス権限 (Monitor Lambda用)
-resource "aws_iam_role_policy_attachment" "lambda_vpc" {
-  role       = aws_iam_role.lambda_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
-}
-
 # カスタムポリシー: EC2操作、SSM Parameter Store操作
 resource "aws_iam_policy" "lambda_custom_policy" {
   name        = "minecraft_lambda_custom_policy"

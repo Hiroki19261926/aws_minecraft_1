@@ -16,6 +16,12 @@ variable "volume_size" {
   default     = 30
 }
 
+variable "key_name" {
+  description = "EC2キーペア名"
+  type        = string
+  default     = "minecraft-key"
+}
+
 variable "discord_app_id" {
   description = "Discord Application ID (Secret経由)"
   type        = string

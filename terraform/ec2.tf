@@ -16,28 +16,11 @@ data "aws_ami" "al2023_arm64" {
   }
 }
 
-# SSHキーペアの作成
-# 秘密鍵はTerraform stateに含まれるため、本番環境では注意が必要
-# ここでは簡易的に tls_private_key を使用して生成する
-resource "tls_private_key" "pk" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
-}
-
-resource "aws_key_pair" "generated_key" {
-  key_name   = "minecraft-key-pair"
-  public_key = tls_private_key.pk.public_key_openssh
-}
-
-# 秘密鍵をローカルファイルとして保存 (実行者の環境によるため注意)
-# CI/CD環境ではアーティファクトとして保存するか、別途管理が必要
-# ここでは一旦ローカルに保存しない（stateから取得可能）
-
 # EC2インスタンス
 resource "aws_instance" "minecraft" {
   ami           = data.aws_ami.al2023_arm64.id
   instance_type = var.instance_type
-  key_name      = aws_key_pair.generated_key.key_name
+  key_name      = var.key_name
 
   subnet_id                   = data.aws_subnet.default.id
   vpc_security_group_ids      = [aws_security_group.minecraft_sg.id]

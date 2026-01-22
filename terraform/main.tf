@@ -1,23 +1,10 @@
 terraform {
-  required_version = ">= 1.6.0"
-
   backend "s3" {
-    bucket         = "Undecided"
-    key            = "minecraft/terraform.tfstate"
+    bucket         = "minecraft-tfstate-1-hn"
+    key            = "minecraft1/prod/terraform.tfstate"
     region         = "ap-northeast-1"
     dynamodb_table = "terraform-locks"
     encrypt        = true
-  }
-
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-    archive = {
-      source  = "hashicorp/archive"
-      version = "~> 2.0"
-    }
   }
 }
 
