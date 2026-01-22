@@ -427,12 +427,22 @@ def get_player_count(host, password, port=25575):
 
 ## 10. 未決定事項・TODO
 
+### 完了済み
 - [x] S3バケット名の決定・作成 → `minecraft-tfstate-1-hn`
 - [x] DynamoDBテーブルの作成 → `terraform-locks`
 - [x] SSH用キーペアの作成 → `minecraft-key`
-- [ ] Discord Application作成・各種IDの取得
-- [ ] GitHub SecretsへのAWS認証情報登録
-- [ ] IAMユーザー（GitHub Actions用）の作成
+- [x] Discord Application作成・各種IDの取得
+- [x] GitHub SecretsへのAWS認証情報登録
+- [x] GitHub SecretsへのDiscord情報登録
+- [x] GitHub SecretsへのRCON_PASSWORD登録
+- [x] IAMユーザー（GitHub Actions用）の作成 → `github-actions-terraform`
+
+### 未完了
+- [ ] Terraformコードの作成（Julesに依頼）
+- [ ] GitHub Actionsワークフローの作成（Julesに依頼）
+- [ ] Lambdaコードの作成（Julesに依頼）
+- [ ] Discord Interactions Endpoint URLの設定（Terraform apply後）
+- [ ] 動作確認
 - [ ] 将来的な追加機能の検討
   - [ ] S3へのワールドデータ定期バックアップ
   - [ ] Minecraftバージョン更新の自動化
