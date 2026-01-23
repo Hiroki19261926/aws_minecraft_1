@@ -8,6 +8,14 @@ from nacl.exceptions import BadSignatureError
 DISCORD_PUBLIC_KEY = os.environ.get('DISCORD_PUBLIC_KEY')
 INSTANCE_ID = os.environ.get('INSTANCE_ID')
 
+# 公開鍵の初期化
+VERIFY_KEY = None
+if DISCORD_PUBLIC_KEY:
+    try:
+        VERIFY_KEY = VerifyKey(bytes.fromhex(DISCORD_PUBLIC_KEY))
+    except Exception:
+        pass
+
 # EC2 クライアントの初期化
 ec2 = boto3.client('ec2')
 
@@ -21,7 +29,7 @@ def verify_signature(event):
     Returns:
         bool: 署名が有効な場合は True、それ以外は False
     """
-    if not DISCORD_PUBLIC_KEY:
+    if not VERIFY_KEY:
         return False
 
     try:
@@ -34,8 +42,7 @@ def verify_signature(event):
             return False
 
         # 公開鍵を使って署名を検証
-        verify_key = VerifyKey(bytes.fromhex(DISCORD_PUBLIC_KEY))
-        verify_key.verify(f'{timestamp}{body}'.encode(), bytes.fromhex(signature))
+        VERIFY_KEY.verify(f'{timestamp}{body}'.encode(), bytes.fromhex(signature))
         return True
     except (BadSignatureError, Exception):
         return False
