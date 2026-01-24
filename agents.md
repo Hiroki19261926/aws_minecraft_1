@@ -44,7 +44,7 @@
 [EC2: Minecraft Server (t4g.medium)]
     │
     ├── EBS (30GB gp3): ワールドデータ永続化
-    ├── Security Group: 25565(MC), 25575(RCON), 22(SSH)
+    ├── Security Group: 25565(MC), 57000(RCON), 22(SSH)
     └── User Data: 初回起動時に自動セットアップ
 
 [S3]
@@ -92,7 +92,7 @@
 - **バージョン**: 最新安定版（セットアップ時に自動取得）
 - **ポート**: 
   - 25565（ゲーム接続用）
-  - 25575（RCON、内部監視用）
+  - 57000（RCON、内部監視用）
 - **RCON**: 有効化（プレイヤー数監視のため）
 - **メモリ割当**: 3GB（-Xmx3G -Xms3G）
 - **セットアップ方式**: EC2 User Dataスクリプトで自動構築
@@ -129,7 +129,7 @@
 | ルール | ポート | プロトコル | ソース | 用途 |
 |--------|--------|------------|--------|------|
 | インバウンド | 25565 | TCP | 0.0.0.0/0 | Minecraft接続 |
-| インバウンド | 25575 | TCP | Lambda SG | RCON（Lambda専用） |
+| インバウンド | 57000 | TCP | Lambda SG | RCON（Lambda専用） |
 | インバウンド | 22 | TCP | 管理者IP (変数指定) | SSH接続 |
 | アウトバウンド | 全て | 全て | 0.0.0.0/0 | インターネットアクセス |
 
@@ -137,7 +137,7 @@
 
 | ルール | ポート | プロトコル | ソース | 用途 |
 |--------|--------|------------|--------|------|
-| アウトバウンド | 25575 | TCP | MC SG | RCON接続 |
+| アウトバウンド | 57000 | TCP | MC SG | RCON接続 |
 | アウトバウンド | 443 | TCP | 0.0.0.0/0 | AWS API呼び出し |
 
 ---
@@ -196,10 +196,10 @@
 ```hcl
 terraform {
   backend "s3" {
-    bucket         = "minecraft-tfstate-1-hn"
+    bucket         = "YOUR_BUCKET_NAME"
     key            = "minecraft1/prod/terraform.tfstate"
     region         = "ap-northeast-1"
-    dynamodb_table = "terraform-locks"
+    dynamodb_table = "YOUR_DYNAMODB_TABLE"
     encrypt        = true
   }
 }
@@ -224,7 +224,7 @@ provider "aws" {
 | `admin_ip` | string | SSH許可IPアドレス | `null`（指定時のみSSH許可） |
 | `rcon_password` | string | RCON認証パスワード | （必須・Secret経由） |
 | `minecraft_port` | number | Minecraftポート | `25565` |
-| `rcon_port` | number | RCONポート | `25575` |
+| `rcon_port` | number | RCONポート | `57000` |
 
 ### 5.4 出力定義 (outputs.tf)
 
@@ -329,22 +329,22 @@ jobs:
 
 以下は「鶏と卵」問題を避けるため、Terraform実行前に手動で作成する：
 
-1. **S3バケット** (tfstate保存用) ✅ 作成済み
-   - バケット名: `minecraft-tfstate-1-hn`
+1. **S3バケット** (tfstate保存用)
+   - バケット名: `YOUR_BUCKET_NAME`
    - リージョン: ap-northeast-1
    - バージョニング: 有効推奨
    - パブリックアクセス: 全てブロック
 
-2. **DynamoDBテーブル** (tfstateロック用) ✅ 作成済み
-   - テーブル名: `terraform-locks`
+2. **DynamoDBテーブル** (tfstateロック用)
+   - テーブル名: `YOUR_DYNAMODB_TABLE`
    - パーティションキー: `LockID` (String)
    - 課金モード: オンデマンド
 
-3. **EC2キーペア** ✅ 作成済み
-   - キーペア名: `minecraft-key`
+3. **EC2キーペア**
+   - キーペア名: `YOUR_KEY_PAIR_NAME`
 
 4. **IAMユーザー** (GitHub Actions用)
-   - ユーザー名: `github-actions-terraform`
+   - ユーザー名: `YOUR_IAM_USER`
    - 必要なポリシー: EC2, Lambda, API Gateway, IAM, SSM, CloudWatch等への権限
 
 ### 7.2 Discord側の準備
@@ -396,7 +396,7 @@ mcrcon ライブラリまたはソケット直接接続でRCON通信を行う。
 ```python
 from mcrcon import MCRcon
 
-def get_player_count(host, password, port=25575):
+def get_player_count(host, password, port=57000):
     with MCRcon(host, password, port) as mcr:
         response = mcr.command("list")
         # "There are X of a max of Y players online: ..." をパース
@@ -428,14 +428,14 @@ def get_player_count(host, password, port=25575):
 ## 10. 未決定事項・TODO
 
 ### 完了済み
-- [x] S3バケット名の決定・作成 → `minecraft-tfstate-1-hn`
-- [x] DynamoDBテーブルの作成 → `terraform-locks`
-- [x] SSH用キーペアの作成 → `minecraft-key`
+- [x] S3バケット名の決定・作成
+- [x] DynamoDBテーブルの作成
+- [x] SSH用キーペアの作成
 - [x] Discord Application作成・各種IDの取得
 - [x] GitHub SecretsへのAWS認証情報登録
 - [x] GitHub SecretsへのDiscord情報登録
 - [x] GitHub SecretsへのRCON_PASSWORD登録
-- [x] IAMユーザー（GitHub Actions用）の作成 → `github-actions-terraform`
+- [x] IAMユーザー（GitHub Actions用）の作成
 
 ### 未完了
 - [ ] Terraformコードの作成（Julesに依頼）
