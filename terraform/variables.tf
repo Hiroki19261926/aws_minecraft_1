@@ -55,5 +55,5 @@ variable "minecraft_port" {
 variable "rcon_port" {
   description = "RCONポート"
   type        = number
-  default     = 25575
+  default     = 57000
 }
