@@ -44,7 +44,7 @@
 [EC2: Minecraft Server (t4g.medium)]
     │
     ├── EBS (30GB gp3): ワールドデータ永続化
-    ├── Security Group: 25565(MC), 57000(RCON), 22(SSH)
+    ├── Security Group: 25565(MC), 25575(RCON), 22(SSH)
     └── User Data: 初回起動時に自動セットアップ
 
 [S3]
@@ -92,7 +92,7 @@
 - **バージョン**: 最新安定版（セットアップ時に自動取得）
 - **ポート**: 
   - 25565（ゲーム接続用）
-  - 57000（RCON、内部監視用）
+  - 25575（RCON、内部監視用）
 - **RCON**: 有効化（プレイヤー数監視のため）
 - **メモリ割当**: 3GB（-Xmx3G -Xms3G）
 - **セットアップ方式**: EC2 User Dataスクリプトで自動構築
@@ -193,14 +193,15 @@
 
 ### 5.2 Backend設定 (main.tf)
 
+**セキュリティのため、S3バケット名とDynamoDBテーブル名はコードにハードコードせず、GitHub Secretsで管理します。**
+
 ```hcl
 terraform {
   backend "s3" {
-    bucket         = "YOUR_BUCKET_NAME"
-    key            = "minecraft1/prod/terraform.tfstate"
-    region         = "ap-northeast-1"
-    dynamodb_table = "YOUR_DYNAMODB_TABLE"
-    encrypt        = true
+    key     = "minecraft1/prod/terraform.tfstate"
+    region  = "ap-northeast-1"
+    encrypt = true
+    # bucket と dynamodb_table は terraform init 時に -backend-config で指定
   }
 }
 
@@ -208,6 +209,10 @@ provider "aws" {
   region = var.aws_region
 }
 ```
+
+**実際の値（GitHub Secretsに登録）:**
+- S3バケット名: GitHub Secret `TF_BACKEND_BUCKET` に設定
+- DynamoDBテーブル名: GitHub Secret `TF_BACKEND_DYNAMO_TABLE` に設定
 
 ### 5.3 変数定義 (variables.tf)
 
@@ -224,7 +229,7 @@ provider "aws" {
 | `admin_ip` | string | SSH許可IPアドレス | `null`（指定時のみSSH許可） |
 | `rcon_password` | string | RCON認証パスワード | （必須・Secret経由） |
 | `minecraft_port` | number | Minecraftポート | `25565` |
-| `rcon_port` | number | RCONポート | `57000` |
+| `rcon_port` | number | RCONポート | `25575` |
 
 ### 5.4 出力定義 (outputs.tf)
 
@@ -289,7 +294,10 @@ jobs:
         run: terraform fmt -check -recursive
 
       - name: Terraform Init
-        run: terraform init
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_BACKEND_BUCKET }}" \
+            -backend-config="dynamodb_table=${{ secrets.TF_BACKEND_DYNAMO_TABLE }}"
 
       - name: Terraform Validate
         run: terraform validate
@@ -317,6 +325,8 @@ jobs:
 |----------|------|----------|
 | `AWS_ACCESS_KEY_ID` | AWSアクセスキーID | IAMユーザー作成時 |
 | `AWS_SECRET_ACCESS_KEY` | AWSシークレットアクセスキー | IAMユーザー作成時 |
+| `TF_BACKEND_BUCKET` | tfstate用S3バケット名 | 手動作成したS3バケット名 |
+| `TF_BACKEND_DYNAMO_TABLE` | tfstateロック用DynamoDBテーブル名 | 手動作成したテーブル名 |
 | `DISCORD_APP_ID` | Discord Application ID | Discord Developer Portal |
 | `DISCORD_PUBLIC_KEY` | Discord Public Key | Discord Developer Portal |
 | `RCON_PASSWORD` | RCON認証用パスワード | 任意の文字列を設定 |
@@ -329,22 +339,22 @@ jobs:
 
 以下は「鶏と卵」問題を避けるため、Terraform実行前に手動で作成する：
 
-1. **S3バケット** (tfstate保存用)
-   - バケット名: `YOUR_BUCKET_NAME`
+1. **S3バケット** (tfstate保存用) ✅ 作成済み
+   - バケット名: GitHub Secret `TF_BACKEND_BUCKET` に登録
    - リージョン: ap-northeast-1
    - バージョニング: 有効推奨
    - パブリックアクセス: 全てブロック
 
-2. **DynamoDBテーブル** (tfstateロック用)
-   - テーブル名: `YOUR_DYNAMODB_TABLE`
+2. **DynamoDBテーブル** (tfstateロック用) ✅ 作成済み
+   - テーブル名: GitHub Secret `TF_BACKEND_DYNAMO_TABLE` に登録
    - パーティションキー: `LockID` (String)
    - 課金モード: オンデマンド
 
-3. **EC2キーペア**
-   - キーペア名: `YOUR_KEY_PAIR_NAME`
+3. **EC2キーペア** ✅ 作成済み
+   - キーペア名: `minecraft-key`
 
-4. **IAMユーザー** (GitHub Actions用)
-   - ユーザー名: `YOUR_IAM_USER`
+4. **IAMユーザー** (GitHub Actions用) ✅ 作成済み
+   - ユーザー名: `github-actions-terraform`
    - 必要なポリシー: EC2, Lambda, API Gateway, IAM, SSM, CloudWatch等への権限
 
 ### 7.2 Discord側の準備
