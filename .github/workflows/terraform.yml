@@ -56,7 +56,10 @@ jobs:
         run: terraform fmt -check -recursive
 
       - name: Terraform Init
-        run: terraform init
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_BACKEND_BUCKET }}" \
+            -backend-config="dynamodb_table=${{ secrets.TF_BACKEND_DYNAMO_TABLE }}"
 
       - name: Terraform Validate
         run: terraform validate
