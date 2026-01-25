@@ -1,10 +1,9 @@
 terraform {
   backend "s3" {
-    bucket         = "YOUR_BUCKET_NAME"
-    key            = "minecraft1/prod/terraform.tfstate"
-    region         = "ap-northeast-1"
-    dynamodb_table = "YOUR_DYNAMODB_TABLE"
-    encrypt        = true
+    key     = "minecraft1/prod/terraform.tfstate"
+    region  = "ap-northeast-1"
+    encrypt = true
+    # bucket と dynamodb_table は terraform init 時に -backend-config で指定
   }
 }
 
