@@ -20,7 +20,7 @@ data "archive_file" "discord_bot_zip" {
 resource "aws_lambda_function" "discord_bot" {
   filename         = data.archive_file.discord_bot_zip.output_path
   function_name    = "minecraft_discord_bot"
-  role             = aws_iam_role.lambda_role.arn
+  role             = aws_iam_role.discord_bot_role.arn
   handler          = "index.handler"
   source_code_hash = data.archive_file.discord_bot_zip.output_base64sha256
   runtime          = "python3.12"
@@ -59,7 +59,7 @@ data "archive_file" "monitor_zip" {
 resource "aws_lambda_function" "monitor" {
   filename         = data.archive_file.monitor_zip.output_path
   function_name    = "minecraft_monitor"
-  role             = aws_iam_role.lambda_role.arn
+  role             = aws_iam_role.monitor_role.arn
   handler          = "index.handler"
   source_code_hash = data.archive_file.monitor_zip.output_base64sha256
   runtime          = "python3.12"
