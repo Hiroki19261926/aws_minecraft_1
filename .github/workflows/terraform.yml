@@ -65,7 +65,7 @@ jobs:
         run: terraform validate
 
       - name: Terraform Plan
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
         run: terraform plan -no-color
         env:
           TF_VAR_discord_app_id: ${{ secrets.DISCORD_APP_ID }}
