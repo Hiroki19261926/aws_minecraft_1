@@ -1,5 +1,6 @@
 # Minecraft Server on AWS with Terraform
 
+実行用
 このリポジトリは、AWS上にMinecraftサーバーを構築・運用するためのTerraformコードとLambda関数を含んでいます。
 コストを抑えつつ（月額500円程度）、Discordからサーバーの起動・停止を行えるように設計されています。
 
