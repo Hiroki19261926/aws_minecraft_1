@@ -73,6 +73,7 @@ jobs:
           TF_VAR_rcon_password: ${{ secrets.RCON_PASSWORD }}
 
       - name: Terraform Apply
+        # Run Apply only on push to main
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve
         env:
